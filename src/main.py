@@ -119,6 +119,7 @@ if uploaded_file is not None:
     try:
         # Lê o CSV em um DataFrame
         df = pd.read_csv(uploaded_file, index_col=0)
+        df = df.reset_index(drop=True)
 
         st.success("✅ Arquivo carregado com sucesso!")
 
