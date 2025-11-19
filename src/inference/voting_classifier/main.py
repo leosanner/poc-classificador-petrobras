@@ -32,7 +32,7 @@ def predictions_df(df: pd.DataFrame):
     df["prob_not_eia"] = preds[:, 0]
     df["prob_eia"] = preds[:, 1]
 
-    df.reset_index(drop=True)
-    df_user.reset_index(drop=True)
+    df = df.reset_index(drop=True)
+    df_user = df_user.reset_index(drop=True)
 
     return (df, df_user)
