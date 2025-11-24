@@ -12,3 +12,4 @@ wheels/
 
 # Credentials Files
 service_credentials.json
+.streamlit
