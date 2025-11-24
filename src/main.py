@@ -1,8 +1,8 @@
 from inference.voting_classifier.main import predictions_df
 import streamlit as st
 import pandas as pd
-from utils.save_new_data import save_new_file
-from cloud.onedrive.upload_files import upload_dataframe
+# from utils.save_new_data import save_new_file
+# from cloud.onedrive.upload_files import upload_dataframe
 
 # Configurações básicas da página
 st.set_page_config(
@@ -131,7 +131,7 @@ if uploaded_file is not None:
 
         proba, user = predictions_df(df)
 
-        upload_dataframe(proba)
+        # upload_dataframe(proba)
 
         st.caption(
             "As predições abaixo são **experimentais** e fazem parte da etapa de validação do modelo."
