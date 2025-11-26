@@ -1,3 +1,4 @@
+
 import joblib
 import json
 from pathlib import Path
@@ -86,15 +87,16 @@ def preprocess_text(text: str) -> List[str]:
 
 
 # Transforma o texto pré-processado em um vetor (representação numérica)
-def vectorize_text(text: str):
-    tf_idf = load_tf_idf()
+def vectorize_text(text: str, tf_idf=None):
+    if tf_idf is None:
+        tf_idf = load_tf_idf()
 
     return tf_idf.transform(text).toarray()
 
 
 # Preprocessamento completo, recebe texto e retorna vetor
-def preprocess(text: str) -> np.array:
+def preprocess(text: str, tf_idf=None) -> np.array:
     preprocessed_text = preprocess_text(text)
     preprocessed_text = " ".join(preprocessed_text)
 
-    return vectorize_text([preprocessed_text])
+    return vectorize_text([preprocessed_text], tf_idf=tf_idf)

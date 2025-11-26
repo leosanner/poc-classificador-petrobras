@@ -1,3 +1,4 @@
+
 import requests
 import msal
 import streamlit as st
@@ -6,7 +7,16 @@ import io
 
 
 def get_azure_credentials():
+    if "azure-test" not in st.secrets:
+        raise ValueError("Secrets 'azure-test' not found in st.secrets")
+        
     azure_credentials = st.secrets["azure-test"]
+    
+    required_keys = ["TENANT_ID", "CLIENT_ID", "CLIENT_SECRET", "USER_UPN"]
+    missing_keys = [key for key in required_keys if key not in azure_credentials]
+    
+    if missing_keys:
+        raise ValueError(f"Missing keys in azure-test secrets: {missing_keys}")
 
     return {
         "tenant_id": azure_credentials["TENANT_ID"],
@@ -16,6 +26,7 @@ def get_azure_credentials():
     }
 
 
+@st.cache_data(ttl=3000)
 def get_access_token():
     credentials = get_azure_credentials()
     tenant = credentials.get("tenant_id")
@@ -29,8 +40,6 @@ def get_access_token():
 
     scopes = ["https://graph.microsoft.com/.default"]
     result = app.acquire_token_for_client(scopes=scopes)
-
-    print(result)
 
     if "access_token" not in result:
         raise RuntimeError(f"Erro em obter token: {result}")
@@ -51,7 +60,12 @@ def upload_file(file_bytes: bytes, file_name: str, content_type="text/csv"):
         f"/users/{credentials['user_upn']}/drive/root:/{path}:/content"
     )
 
+    print(url)
+
     headers = {"Authorization": f"Bearer {access_token}", "Content-Type": content_type}
+
+    print(headers)
+
     response = requests.put(url, headers=headers, data=file_bytes)
 
     if response.status_code in (200, 201):

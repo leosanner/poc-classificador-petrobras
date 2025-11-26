@@ -1,6 +1,8 @@
 from inference.voting_classifier.main import predictions_df
 import streamlit as st
 import pandas as pd
+from utils.csv_utils import check_index_column
+
 # from utils.save_new_data import save_new_file
 # from cloud.onedrive.upload_files import upload_dataframe
 
@@ -77,10 +79,8 @@ with col1:
 
     st.markdown(
         """
-1. Prepare uma **planilha em formato CSV** contendo, pelo menos, as seguintes colunas (nesta ordem):  
-   - `Title` → título do trabalho  
-   - `Abstract` → resumo do trabalho  
-   - `Keywords` → palavras-chave associadas  
+1. Prepare uma **planilha em formato CSV** com os dados dos trabalhos.
+   O modelo utilizará o conteúdo textual das colunas para realizar a classificação.
 
 2. Faça o **upload do arquivo CSV** no campo abaixo.
 
@@ -112,14 +112,44 @@ st.subheader("📤 Envie sua planilha CSV para teste")
 uploaded_file = st.file_uploader(
     "Selecione sua planilha em formato CSV",
     type=["csv"],
-    help="A planilha deve conter, no mínimo, as colunas: Title, Abstract e Keywords.",
 )
 
-if uploaded_file is not None:
+
+OPTIONS_SEP = {
+    "Vírgula (,)": ",",
+    "Ponto e vírgula (;)": ";",
+    "Tab (\\t)": "\t",
+    "Pipe (|)": "|",
+}
+
+
+sep = st.selectbox(
+    "Escolha um delimitador (';' é o padrão, porém caso ocorram erros altere):",
+    OPTIONS_SEP.keys(),
+)
+
+run = st.button("Gerar predições")
+
+if (uploaded_file is not None) and run:
+
+    if not sep:
+        sep = ";"
+
+    else:
+        sep = OPTIONS_SEP[sep]
+
     try:
         # Lê o CSV em um DataFrame
-        df = pd.read_csv(uploaded_file, index_col=0)
-        df = df.reset_index(drop=True)
+        # Tenta ler sem assumir index_col primeiro
+        df = pd.read_csv(uploaded_file, sep=sep)
+
+        # Check for index column
+        if check_index_column(df):
+            st.info("ℹ️ Index column detected and removed.")
+            df = df.iloc[:, 1:]
+
+        # Vamos limpar colunas vazias ou "Unnamed" que as vezes aparecem
+        df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
 
         st.success("✅ Arquivo carregado com sucesso!")
 
@@ -131,7 +161,10 @@ if uploaded_file is not None:
 
         proba, user = predictions_df(df)
 
-        # upload_dataframe(proba)
+        # if upload_dataframe(proba):
+        #      st.toast("Dados enviados para nuvem com sucesso!", icon="☁️")
+        # else:
+        #      st.warning("⚠️ Não foi possível enviar os dados para a nuvem. A classificação foi realizada, mas o registro falhou.")
 
         st.caption(
             "As predições abaixo são **experimentais** e fazem parte da etapa de validação do modelo."
@@ -143,6 +176,10 @@ if uploaded_file is not None:
             "e compartilhe esse feedback. Isso ajuda muito a calibrar futuras versões."
         )
 
+    except pd.errors.EmptyDataError:
+        st.error("❌ O arquivo enviado está vazio.")
+    except pd.errors.ParserError:
+        st.error("❌ Erro ao ler o arquivo CSV. Verifique o formato.")
     except Exception as e:
         st.error("❌ Ocorreu um erro ao processar o arquivo.")
         st.exception(e)
