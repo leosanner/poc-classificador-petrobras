@@ -1,78 +1,54 @@
-
-import requests
-import msal
+import datetime
 import streamlit as st
 import pandas as pd
 import io
+from azure.storage.blob import BlobServiceClient
+
+TOML_BLOB_STORAGE = "azure-blob-storage"
 
 
-def get_azure_credentials():
-    if "azure-test" not in st.secrets:
-        raise ValueError("Secrets 'azure-test' not found in st.secrets")
-        
-    azure_credentials = st.secrets["azure-test"]
-    
-    required_keys = ["TENANT_ID", "CLIENT_ID", "CLIENT_SECRET", "USER_UPN"]
-    missing_keys = [key for key in required_keys if key not in azure_credentials]
-    
-    if missing_keys:
-        raise ValueError(f"Missing keys in azure-test secrets: {missing_keys}")
+# Carregar credencias para upload
+def load_azure_credentials():
+    azure_toml = TOML_BLOB_STORAGE
+    connection_str_toml = "AZURE_STORAGE_CONNECTION_STRING"
+    container_name_toml = "AZURE_STORAGE_CONTAINER_NAME"
+    azure_credentials = st.secrets[azure_toml]
+
+    connection_string = azure_credentials.get(connection_str_toml)
+    if not connection_string:
+        raise ValueError("Connection string não foi encontrada")
+
+    container_name = azure_credentials.get(container_name_toml)
 
     return {
-        "tenant_id": azure_credentials["TENANT_ID"],
-        "client_id": azure_credentials["CLIENT_ID"],
-        "client_secret": azure_credentials["CLIENT_SECRET"],
-        "user_upn": azure_credentials["USER_UPN"],
+        "connection_string": connection_string,
+        "container_name": container_name,
     }
 
 
-@st.cache_data(ttl=3000)
-def get_access_token():
-    credentials = get_azure_credentials()
-    tenant = credentials.get("tenant_id")
-
-    authority = f"https://login.microsoftonline.com/{tenant}"
-    app = msal.ConfidentialClientApplication(
-        client_id=credentials.get("client_id"),
-        authority=authority,
-        client_credential=credentials.get("client_secret"),
+def load_client():
+    azure_credentials = load_azure_credentials()
+    blob_service_client = BlobServiceClient.from_connection_string(
+        azure_credentials.get("connection_string")
+    )
+    container_client = blob_service_client.get_container_client(
+        azure_credentials.get("container_name")
     )
 
-    scopes = ["https://graph.microsoft.com/.default"]
-    result = app.acquire_token_for_client(scopes=scopes)
-
-    if "access_token" not in result:
-        raise RuntimeError(f"Erro em obter token: {result}")
-
-    return result["access_token"]
+    return container_client
 
 
-def upload_file(file_bytes: bytes, file_name: str, content_type="text/csv"):
-    credentials = get_azure_credentials()
-    access_token = get_access_token()
+def generate_blob_name():
+    user_id = st.secrets[TOML_BLOB_STORAGE]["USER_ID"]
+    time = datetime.datetime.now(tz=datetime.UTC)
 
-    folder_path = st.secrets["azure-test"]["FOLDER_PATH"]
+    day_str = time.strftime("%Y-%m-%d")
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
 
-    path = f"{folder_path}/{file_name}"
+    file_name = f"dataframe_{timestamp}.csv"
+    blob_name = f"{user_id}/{day_str}/{file_name}"
 
-    url = (
-        "https://graph.microsoft.com/v1.0"
-        f"/users/{credentials['user_upn']}/drive/root:/{path}:/content"
-    )
-
-    print(url)
-
-    headers = {"Authorization": f"Bearer {access_token}", "Content-Type": content_type}
-
-    print(headers)
-
-    response = requests.put(url, headers=headers, data=file_bytes)
-
-    if response.status_code in (200, 201):
-        return response.json()
-
-    else:
-        raise RuntimeError(f"Erro ({response.status_code}): {response.text}")
+    return blob_name
 
 
 def encode_dataframe(df: pd.DataFrame) -> bytes:
@@ -83,12 +59,14 @@ def encode_dataframe(df: pd.DataFrame) -> bytes:
     return csv_str.encode("utf-8")
 
 
-def upload_dataframe(df: pd.DataFrame, file_name: str = "teste_1.csv"):
+def upload_dataframe(df: pd.DataFrame):
     encoded_df = encode_dataframe(df)
+    file_name = generate_blob_name()
+    container_client = load_client()
 
     try:
-        upload_file(encoded_df, file_name=file_name)
-        return True
+        blob_client = container_client.get_blob_client(file_name)
+        blob_client.upload_blob(encoded_df, overwrite=True)
 
     except RuntimeError as e:
         print(f"Ocorreu um problema no upload do dataframe: {e}")

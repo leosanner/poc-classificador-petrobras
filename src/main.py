@@ -2,9 +2,7 @@ from inference.voting_classifier.main import predictions_df
 import streamlit as st
 import pandas as pd
 from utils.csv_utils import check_index_column
-
-# from utils.save_new_data import save_new_file
-# from cloud.onedrive.upload_files import upload_dataframe
+from cloud.onedrive.upload_files import upload_dataframe
 
 # Configurações básicas da página
 st.set_page_config(
@@ -154,17 +152,23 @@ if (uploaded_file is not None) and run:
         st.success("✅ Arquivo carregado com sucesso!")
 
         st.markdown("#### 🔎 Pré-visualização dos dados enviados")
-        st.dataframe(df.head(), use_container_width=True)
+        st.dataframe(df.head(), width="stretch")
 
         st.markdown("----")
         st.markdown("#### 🧠 Resultados da classificação (prova de conceito)")
 
         proba, user = predictions_df(df)
 
-        # if upload_dataframe(proba):
-        #      st.toast("Dados enviados para nuvem com sucesso!", icon="☁️")
-        # else:
-        #      st.warning("⚠️ Não foi possível enviar os dados para a nuvem. A classificação foi realizada, mas o registro falhou.")
+        try:
+            upload_dataframe(proba)
+            st.toast("Dados enviados para nuvem com sucesso!", icon="☁️")
+
+        except Exception as e:
+            st.warning(
+                "⚠️ Não foi possível enviar os dados para a nuvem. A classificação foi realizada, mas o registro falhou."
+            )
+
+            print(e)
 
         st.caption(
             "As predições abaixo são **experimentais** e fazem parte da etapa de validação do modelo."
