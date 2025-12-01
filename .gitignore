@@ -13,3 +13,7 @@ wheels/
 # Credentials Files
 service_credentials.json
 .streamlit
+
+src/data/test.csv
+src/data/train.csv
+src/data/p.py
