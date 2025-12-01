@@ -83,6 +83,8 @@ with col1:
 2. Faça o **upload do arquivo CSV** no campo abaixo.
 
 3. Aguarde o processamento: cada linha será analisada pelo modelo.
+
+4. **Muito Importante:** o único requisito é ter uma coluna nomeada como *  *Title**
 """
     )
 
@@ -120,6 +122,7 @@ OPTIONS_SEP = {
     "Pipe (|)": "|",
 }
 
+user_name = st.text_input("Insira seu nome")
 
 sep = st.selectbox(
     "Escolha um delimitador (';' é o padrão, porém caso ocorram erros altere):",
@@ -160,7 +163,7 @@ if (uploaded_file is not None) and run:
         proba, user = predictions_df(df)
 
         try:
-            upload_dataframe(proba)
+            upload_dataframe(proba, username=user_name)
             st.toast("Dados enviados para nuvem com sucesso!", icon="☁️")
 
         except Exception as e:

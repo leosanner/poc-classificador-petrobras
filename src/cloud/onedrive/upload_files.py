@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import io
 from azure.storage.blob import BlobServiceClient
+from utils.verify_duplicates import return_duplicated_elements
 
 TOML_BLOB_STORAGE = "azure-blob-storage"
 
@@ -38,7 +39,7 @@ def load_client():
     return container_client
 
 
-def generate_blob_name(folder_name: str = None):
+def generate_blob_names(folder_name: str = None, duplicates=False):
     user_id = st.secrets[TOML_BLOB_STORAGE]["USER_ID"]
     time = datetime.datetime.now(tz=datetime.UTC)
 
@@ -50,7 +51,11 @@ def generate_blob_name(folder_name: str = None):
     file_name = f"dataframe_{timestamp}.csv"
     blob_name = f"{user_id}/{folder_name}/{file_name}"
 
-    return blob_name
+    if duplicates:
+        duplicates_name = f"{user_id}/{folder_name}-duplicados/{file_name}"
+        return [blob_name, duplicates_name]
+
+    return [blob_name]
 
 
 def encode_dataframe(df: pd.DataFrame) -> bytes:
@@ -61,16 +66,28 @@ def encode_dataframe(df: pd.DataFrame) -> bytes:
     return csv_str.encode("utf-8")
 
 
-def upload_dataframe(df: pd.DataFrame):
+def upload_dataframe(df: pd.DataFrame, username:str):
     encoded_df = encode_dataframe(df)
-    file_name = generate_blob_name()
     container_client = load_client()
+    duplicated_elements = return_duplicated_elements(df)
 
+    if len(duplicated_elements) != 0:
+        names = generate_blob_names(username, duplicates=True)
+    else:
+        names = generate_blob_names(username)
+        
     try:
-        blob_client = container_client.get_blob_client(file_name)
+        blob_client = container_client.get_blob_client(names[0])
         blob_client.upload_blob(encoded_df, overwrite=True)
+
+        if len(duplicated_elements) != 0:
+            duplicated_elements = encode_dataframe(duplicated_elements)
+            blob_client = container_client.get_blob_client(names[1])
+            blob_client.upload_blob(duplicated_elements, overwrite=True)
 
     except RuntimeError as e:
         print(f"Ocorreu um problema no upload do dataframe: {e}")
 
     return False
+
+
