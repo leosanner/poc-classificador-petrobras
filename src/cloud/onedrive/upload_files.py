@@ -38,15 +38,17 @@ def load_client():
     return container_client
 
 
-def generate_blob_name():
+def generate_blob_name(folder_name: str = None):
     user_id = st.secrets[TOML_BLOB_STORAGE]["USER_ID"]
     time = datetime.datetime.now(tz=datetime.UTC)
 
-    day_str = time.strftime("%Y-%m-%d")
+    if not folder_name:
+        folder_name = time.strftime("%Y-%m-%d")
+
     timestamp = time.strftime("%Y%m%d_%H%M%S")
 
     file_name = f"dataframe_{timestamp}.csv"
-    blob_name = f"{user_id}/{day_str}/{file_name}"
+    blob_name = f"{user_id}/{folder_name}/{file_name}"
 
     return blob_name
 
