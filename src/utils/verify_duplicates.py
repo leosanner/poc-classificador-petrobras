@@ -1,4 +1,9 @@
 import re
+from pathlib import Path
+import pandas as pd
+
+PARENT = Path(__file__).parent
+DATA_PATH = PARENT.parent / "dataset.csv"
 
 
 def tokenize_text(text: str) -> list[str]:
@@ -22,6 +27,12 @@ def text_similarity(text1: str, text2: str) -> float:
             token_match += 1
 
     return token_match / len(tokenized_1)
+
+
+# Carregar conjunto de dados total retornando uma lista
+def load_text_dataset() -> list[str]:
+    df = pd.read_csv(DATA_PATH)
+    #! Continuar
 
 
 if __name__ == "__main__":
