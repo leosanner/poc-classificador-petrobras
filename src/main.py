@@ -171,7 +171,7 @@ if (uploaded_file is not None) and run:
                 "⚠️ Não foi possível enviar os dados para a nuvem. A classificação foi realizada, mas o registro falhou."
             )
 
-            print(e)
+            st.write(e)
 
         st.caption(
             "As predições abaixo são **experimentais** e fazem parte da etapa de validação do modelo."
