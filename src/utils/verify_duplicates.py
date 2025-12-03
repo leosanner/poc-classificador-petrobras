@@ -29,24 +29,22 @@ def text_similarity(text1: str, text2: str) -> float:
         if token in tokenized_2:
             token_match += 1
 
-    return token_match / len(tokenized_1)
+    return token_match / len(tokenized_2)
 
 
 # Carregar conjunto de dados total retornando uma lista
 def load_text_dataset() -> list[str]:
     df = pd.read_csv(DATA_PATH).fillna(" ")
-    
-    return list(df['Title'])
+
+    return list(df["Title"])
 
 
-def verify_duplicates(new_text, threshold:float = 0.9):
+def verify_duplicates(new_text, threshold: float = 0.9):
     dataset_titles = load_text_dataset()
     idxs_relateded = []
 
     for idx, title in enumerate(dataset_titles):
-        sim = text_similarity(
-            new_text, title
-        )
+        sim = text_similarity(new_text, title)
 
         if sim >= threshold:
             idxs_relateded.append([idx, sim])
@@ -54,26 +52,22 @@ def verify_duplicates(new_text, threshold:float = 0.9):
     return idxs_relateded
 
 
-def return_duplicated_elements(df:pd.DataFrame):
-    '''Funcão que retorna um dataframe contendo o títtulo do banco original com o dos novos dados de entrada, demonstrando possíveis arquivos existentes,
+def return_duplicated_elements(df: pd.DataFrame):
+    """Funcão que retorna um dataframe contendo o títtulo do banco original com o dos novos dados de entrada, demonstrando possíveis arquivos existentes,
     Colunas: Título Banco || Título Recebido || Similaridade
-    '''
-    data = {
-        "titulo_banco": [],
-        "titulo_recebido": [],
-        "similaridade": []
-    }
+    """
+    data = {"titulo_banco": [], "titulo_recebido": [], "similaridade": []}
 
     df_titles = df["Title"].fillna(" ")
     df_dataset_titles = load_text_dataset()
 
     for title in df_titles:
         duplicates = verify_duplicates(title)
-        
+
         if len(duplicates) > 0:
             for idx, sim in duplicates:
-               data["titulo_banco"].append(df_dataset_titles[idx])
-               data["titulo_recebido"].append(title)
-               data["similaridade"].append(sim)
+                data["titulo_banco"].append(df_dataset_titles[idx])
+                data["titulo_recebido"].append(title)
+                data["similaridade"].append(sim)
 
     return pd.DataFrame(data)
