@@ -84,7 +84,9 @@ with col1:
 
 3. Aguarde o processamento: cada linha será analisada pelo modelo.
 
-4. **Muito Importante:** o único requisito é ter uma coluna nomeada como **Title**
+4. **Muito Importante:** é necessário ter uma coluna nomeada como **Title**, porque estamos **buscando por documentos repetidos** pelo **título**.
+
+5. Dados importantes para o classificador: **título**, **resumo** e **palavras-chave**.
 """
     )
 
@@ -92,6 +94,9 @@ with col1:
         """
 Os resultados serão exibidos em uma **tabela interativa**, com as colunas originais
 e as informações calculadas pelo modelo.
+
+- A coluna com as predições do modelo será nomeada por: **prediction eia**\n
+- Onde **1** significa que **tem relação** com **AIA** e **0** que **não tem relação** com **AIA**.
 """
     )
 
